@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI新闻展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .input-section {
+            flex: 1;
+            max-width: 600px;
+        }
+
+        .output-section {
+            flex: 2;
+            background: url('background.jpg') no-repeat center center;
+            background-size: contain;
+            min-height: 600px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            margin: 0 auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            resize: none;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1557b0;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 115, 232, 0.9);
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .news-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 10px;
+            padding: 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            height: auto;
+            max-width: 90%;
+        }
+
+        .news-content-wrapper {
+            padding: 20px;
+        }
+
+        .news-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+            line-height: 1.4;
+        }
+
+        .news-content {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .news-source {
+            color: #666;
+            font-size: 14px;
+            text-align: right;
+            padding: 10px 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .details-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .details-list li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .details-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-section">
+            <textarea id="jsonInput" placeholder="请输入JSON格式的新闻数据..."></textarea>
+            <button onclick="generateNews()">生成新闻</button>
+            <button onclick="downloadImage()" style="margin-top: 10px;">下载图片</button>
+        </div>
+        <div class="output-section">
+            <div class="news-card">
+                <div class="header-bar">
+                    <span>AI News</span>
+                    <span id="currentDate"></span>
+                </div>
+                <div class="news-content-wrapper" id="newsContent">
+                    <!-- 新闻内容将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 设置当前日期
+        function setCurrentDate() {
+            const date = new Date();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            document.getElementById('currentDate').textContent = `${month}-${day.toString().padStart(2, '0')}`;
+        }
+
+        // 页面加载时设置日期
+        window.addEventListener('load', setCurrentDate);
+
+        function generateNews() {
+            const jsonInput = document.getElementById('jsonInput').value;
+            try {
+                const data = JSON.parse(jsonInput);
+                const news = data.news[0]; // 获取第一条新闻
+                
+                // 移除引用标记的函数
+                const removeReferences = (text) => {
+                    return text.replace(/\[\^\d+\]/g, '');
+                };
+                
+                // 处理标题和详情中的引用标记
+                const cleanTitle = removeReferences(news.title);
+                const cleanDetails = news.description.details.map(detail => removeReferences(detail));
+                
+                let newsHtml = `
+                    <h1 class="news-title">${cleanTitle}</h1>
+                    <div class="news-content">
+                        <ul class="details-list">
+                            ${cleanDetails.map(detail => `<li>${detail}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="news-source">来源：${news.organization}</div>
+                `;
+                
+                document.getElementById('newsContent').innerHTML = newsHtml;
+        
+                // 获取并打印宽度信息
+                const outputSection = document.querySelector('.output-section');
+                const newsCard = document.querySelector('.news-card');
+                console.log('背景区域宽度:', outputSection.offsetWidth, 'px');
+                console.log('新闻卡片宽度:', newsCard.offsetWidth, 'px');
+            } catch (error) {
+                alert('JSON格式错误，请检查输入内容');
+                console.error('Error parsing JSON:', error);
+            }
+        }
+    </script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        // 页面加载时初始化背景图片和新闻卡片尺寸
+        window.addEventListener('load', async function() {
+            const bgImg = new Image();
+            bgImg.src = 'background.jpg';
+            await new Promise((resolve, reject) => {
+                bgImg.onload = resolve;
+                bgImg.onerror = reject;
+            });
+            
+            const newsCard = document.querySelector('.news-card');
+            const cardWidth = Math.floor(bgImg.width * 0.35); // 减小卡片宽度比例
+            newsCard.style.width = cardWidth + 'px';
+            
+            const outputSection = document.querySelector('.output-section');
+            outputSection.style.width = Math.min(bgImg.width, 1200) + 'px'; // 限制最大宽度
+            outputSection.style.height = Math.min(bgImg.height, 800) + 'px'; // 限制最大高度
+        });
+
+        async function downloadImage() {
+            const outputSection = document.querySelector('.output-section');
+            const newsCard = document.querySelector('.news-card');
+            
+            // 确保新闻卡片有内容
+            if (!newsCard || !newsCard.innerHTML.trim()) {
+                alert('请先生成新闻内容再下载图片');
+                return;
+            }
+            
+            try {
+                const canvas = await html2canvas(outputSection, {
+                    useCORS: true,
+                    backgroundColor: null
+                });
+                
+                const link = document.createElement('a');
+                link.download = 'news-image.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (error) {
+                console.error('Error generating image:', error);
+                alert('生成图片时发生错误，请稍后重试');
+            }
+        }
+    </script>
+</body>
+</html>
