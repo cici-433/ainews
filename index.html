@@ -32,9 +32,9 @@
         }
 
         .output-section {
-            flex: 2;
+             /* 移除 flex: 2，避免影响宽度设置 */
             background: url('background.jpg') no-repeat center center;
-            background-size: contain;
+            background-size: cover;
             min-height: 600px;
             position: relative;
             display: flex;
@@ -222,14 +222,19 @@
                 bgImg.onload = resolve;
                 bgImg.onerror = reject;
             });
+
+            const scale = 0.5 // 缩小比例
             
             const newsCard = document.querySelector('.news-card');
-            const cardWidth = Math.floor(bgImg.width * 0.35); // 减小卡片宽度比例
+            const cardWidth = Math.floor(bgImg.width * scale * 0.8); // 减小卡片宽度比例
             newsCard.style.width = cardWidth + 'px';
             
             const outputSection = document.querySelector('.output-section');
-            outputSection.style.width = Math.min(bgImg.width, 1200) + 'px'; // 限制最大宽度
-            outputSection.style.height = Math.min(bgImg.height, 800) + 'px'; // 限制最大高度
+            outputSection.style.width = (bgImg.width * scale) + 'px'; // 宽度缩小一倍
+            outputSection.style.height = (bgImg.height * scale) + 'px';    // 高度缩小一倍
+            // 打印尺寸信息
+            console.log('原始图片尺寸:', bgImg.width, 'x', bgImg.height);
+            console.log('展示区域尺寸:', outputSection.offsetWidth, 'x', outputSection.offsetHeight);
         });
 
         async function downloadImage() {
@@ -245,7 +250,8 @@
             try {
                 const canvas = await html2canvas(outputSection, {
                     useCORS: true,
-                    backgroundColor: null
+                    backgroundColor: null,
+                    scale: 2,  // 提高输出质量
                 });
                 
                 const link = document.createElement('a');
